@@ -1,7 +1,7 @@
 package com.example.supabasetest
 
 import android.os.Bundle
-import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,32 +19,23 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.supabasetest.models.Country
 import com.example.supabasetest.ui.theme.SupaBaseTestTheme
-import com.example.supabasetest.utils.Constants.supabase
+import com.example.supabasetest.utils.Constants
 import com.example.supabasetest.viewmodel.SignUpViewModel
-import io.github.jan.supabase.gotrue.auth
-import io.github.jan.supabase.gotrue.providers.Google
-import io.github.jan.supabase.gotrue.providers.builtin.Email
-import io.github.jan.supabase.postgrest.from
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
+import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
+import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
+import io.github.jan.supabase.compose.auth.composeAuth
 
 val SignUpViewModel = SignUpViewModel()
 
@@ -74,6 +63,22 @@ class MainActivity : ComponentActivity() {
 fun UI() {
     var email: String by rememberSaveable { mutableStateOf("") }
     var code: String by rememberSaveable { mutableStateOf("") }
+    var errorMessage: String = ""
+    val context = LocalContext.current
+    val authState = Constants.supabase.composeAuth.rememberSignInWithGoogle(
+        onResult = {
+            when (it) {
+                NativeSignInResult.ClosedByUser -> errorMessage = "Closed by user"
+                is NativeSignInResult.Error -> errorMessage = it.message
+                is NativeSignInResult.NetworkError -> errorMessage = it.message
+                NativeSignInResult.Success -> Toast.makeText(context,"123",Toast.LENGTH_SHORT).show()
+            }
+        },
+        fallback = {
+            //some custom OAuth flow
+        }
+    )
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -93,10 +98,20 @@ fun UI() {
         ) {
             Text(text = "SignUp With Google")
         }
+        Button(
+            onClick = {
+                //SignUpViewModel.onSignInGoogle()
+                authState.startFlow()
+                if(errorMessage=="Success!") Toast.makeText(context,"123",Toast.LENGTH_SHORT).show()
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(text = "SignIn With Google")
+        }
         CustomEmail(search = code, "Enter Code",
             onValueChange = { newText -> code = newText })
         Button(
-            onClick = { SignUpViewModel.verifyEmailCode(email,code) },
+            onClick = { SignUpViewModel.verifyEmailCode(email, code) },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(text = "Verify Email Code")

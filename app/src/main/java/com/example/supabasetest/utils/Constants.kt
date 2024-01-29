@@ -1,9 +1,9 @@
 package com.example.supabasetest.utils
 
+import io.github.jan.supabase.compose.auth.ComposeAuth
+import io.github.jan.supabase.compose.auth.googleNativeLogin
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.gotrue.Auth
-import io.github.jan.supabase.gotrue.ExternalAuthAction
-import io.github.jan.supabase.gotrue.FlowType
 import io.github.jan.supabase.postgrest.Postgrest
 
 object Constants {
@@ -13,5 +13,8 @@ object Constants {
     ) {
         install(Auth)
         install(Postgrest)
+        install(ComposeAuth) {
+            googleNativeLogin(serverClientId = "514832576242-oar6f7tjgfjfarsd9vl47kd0fvgprl75.apps.googleusercontent.com")
+        }
     }
 }

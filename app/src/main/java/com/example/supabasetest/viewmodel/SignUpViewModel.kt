@@ -8,15 +8,13 @@ import io.github.jan.supabase.gotrue.auth
 import io.github.jan.supabase.gotrue.providers.Google
 import io.github.jan.supabase.gotrue.providers.builtin.Email
 import io.github.jan.supabase.gotrue.providers.builtin.OTP
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 
 class SignUpViewModel(
 ) : ViewModel() {
 
-    fun onSignUpEmail(emailUser: String, passwordUser:String) {
+    fun onSignUpEmail(emailUser: String, passwordUser: String) {
         viewModelScope.launch {
             Constants.supabase.auth.signUpWith(Email) {
                 email = emailUser
@@ -24,6 +22,7 @@ class SignUpViewModel(
             }
         }
     }
+
     fun onSignInEmailCode(emailUser: String) {
         viewModelScope.launch {
             Constants.supabase.auth.signInWith(OTP) {
@@ -32,18 +31,43 @@ class SignUpViewModel(
             }
         }
     }
-    fun verifyEmailCode(emailUser: String,code:String) {
+
+    fun verifyEmailCode(emailUser: String, code: String) {
         viewModelScope.launch {
             Constants.supabase.auth.verifyEmailOtp(
                 type = OtpType.Email.MAGIC_LINK,
                 email = emailUser,
-                token = code)
+                token = code
+            )
         }
         println("Done")
     }
+
     fun onSignUpGoogle() {
         viewModelScope.launch {
             Constants.supabase.auth.signUpWith(Google)
+        }
+    }
+
+    fun onSignInGoogle() {
+        viewModelScope.launch {
+            Constants.supabase.auth.signInWith(
+                provider = Google
+            )
+
+        }
+    }
+
+    fun stateGoogle() {
+        viewModelScope.launch {
+
+           // println(errorMessage)
+        }
+    }
+
+    fun getUSer() {
+        viewModelScope.launch {
+            val user = Constants.supabase.auth.retrieveUserForCurrentSession(updateSession = true)
         }
     }
 }
