@@ -16,41 +16,30 @@ import kotlinx.coroutines.launch
 class SignUpViewModel(
 ) : ViewModel() {
 
-    private val _email = MutableStateFlow("")
-    val email: Flow<String> = _email
-
-    private val _password = MutableStateFlow("")
-    val password = _password
-
-    fun onEmailChange(email: String) {
-        _email.value = email
-    }
-
-    fun onPasswordChange(password: String) {
-        _password.value = password
-    }
-
-    fun onSignUpEmail() {
+    fun onSignUpEmail(emailUser: String, passwordUser:String) {
         viewModelScope.launch {
             Constants.supabase.auth.signUpWith(Email) {
-                email = "jukudryash@gmail.com"
-                password = "_password.value"
-
+                email = emailUser
+                password = passwordUser
             }
         }
     }
-    fun onSignInEmailCode() {
+    fun onSignInEmailCode(emailUser: String) {
         viewModelScope.launch {
             Constants.supabase.auth.signInWith(OTP) {
-                email = "jukudryash@gmail.com"
+                email = emailUser
                 createUser = false
             }
         }
     }
-    fun verifyEmailCode() {
+    fun verifyEmailCode(emailUser: String,code:String) {
         viewModelScope.launch {
-            Constants.supabase.auth.verifyEmailOtp(type = OtpType.Email.INVITE, email = "jukudryash@gmail.com", token = "467914")
+            Constants.supabase.auth.verifyEmailOtp(
+                type = OtpType.Email.MAGIC_LINK,
+                email = emailUser,
+                token = code)
         }
+        println("Done")
     }
     fun onSignUpGoogle() {
         viewModelScope.launch {
