@@ -1,7 +1,14 @@
 package com.example.supabasetest
 
+import android.content.Context
+import android.content.Context.SENSOR_SERVICE
 import android.content.Intent
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -38,10 +45,11 @@ import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import io.github.jan.supabase.compose.auth.composeAuth
 import io.github.jan.supabase.gotrue.handleDeeplinks
-
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -59,19 +67,85 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }
 
+lateinit var sManager: SensorManager
+lateinit var sListener: SensorEventListener
+lateinit var sensor: Sensor
+lateinit var sensor2: Sensor
+fun stop(context: Context) {
+    sManager.unregisterListener(sListener)
+
+    TimeUnit.SECONDS.sleep(1)
+    start(context)
+}
+fun start(context: Context)
+{
+    val magnetic = FloatArray(9)
+    val gravity = FloatArray(9)
+
+    var accrs = FloatArray(3)
+    var magf = FloatArray(3)
+    val values = FloatArray(3)
+
+
+    sManager = context.getSystemService(SENSOR_SERVICE) as SensorManager
+    sensor = sManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!!
+    sensor2 = sManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)!!
+    sListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent?) {
+            when (event?.sensor?.type) {
+                Sensor.TYPE_ACCELEROMETER -> accrs = event.values.clone()
+                Sensor.TYPE_MAGNETIC_FIELD -> magf = event.values.clone()
+            }
+
+            SensorManager.getRotationMatrix(gravity, magnetic, accrs, magf)
+
+            val outGravity = FloatArray(9)
+            SensorManager.remapCoordinateSystem(
+                gravity,
+                SensorManager.AXIS_X,
+                SensorManager.AXIS_Z,
+                outGravity
+            )
+            SensorManager.getOrientation(outGravity, values)
+            val degree = values[2] * 57.2958f
+            Log.d("Angle", degree.toString())
+            if (degree > 50) {
+                Log.d("Angle", "Star + 1")
+                stop(context)
+
+            }
+            if (degree < -50) {
+                Log.d("Angle", "Star - 1")
+                stop(context)
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+
+        }
+
+    }
+    sManager.registerListener(sListener, sensor, SensorManager.SENSOR_DELAY_UI)
+    sManager.registerListener(sListener, sensor2, SensorManager.SENSOR_DELAY_UI)
+}
 @Preview
 @Composable
 fun UI() {
+    var context = LocalContext.current
+
+    start(context)
+
+
     val SignUpViewModel = SignUpViewModel()
-    Constants.supabase.handleDeeplinks(Intent(LocalContext.current,MainActivity::class.java))
+    Constants.supabase.handleDeeplinks(Intent(LocalContext.current, MainActivity::class.java))
     var email: String by rememberSaveable { mutableStateOf("") }
     var password: String by rememberSaveable { mutableStateOf("") }
     var newPassword: String by rememberSaveable { mutableStateOf("") }
     var code: String by rememberSaveable { mutableStateOf("") }
     var errorMessage: String = ""
-    val context = LocalContext.current
     val authState = Constants.supabase.composeAuth.rememberSignInWithGoogle(
         onResult = {
             when (it) {
@@ -162,7 +236,7 @@ fun UI() {
         }
         Button(
             onClick = {
-                SignUpViewModel.updateUser(email,newPassword)
+                SignUpViewModel.updateUser(email, newPassword)
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
