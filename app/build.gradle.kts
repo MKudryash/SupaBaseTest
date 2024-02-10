@@ -82,5 +82,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:gotrue-kt:v2.1.3")
     implementation("io.github.jan-tennert.supabase:compose-auth:1.3.2")
     implementation("io.github.jan-tennert.supabase:compose-auth-ui:1.3.2")
+    implementation ("com.google.accompanist:accompanist-permissions:0.21.1-beta")
+
     //implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }

@@ -1,12 +1,18 @@
 package com.example.supabasetest
 
+import android.Manifest
 import android.content.Context
+import android.content.Context.LOCATION_SERVICE
 import android.content.Context.SENSOR_SERVICE
 import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.location.Geocoder
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -38,16 +44,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import com.example.supabasetest.ui.theme.SupaBaseTestTheme
 import com.example.supabasetest.utils.Constants
 import com.example.supabasetest.viewmodel.SignUpViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberPermissionState
 import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import io.github.jan.supabase.compose.auth.composeAuth
 import io.github.jan.supabase.gotrue.handleDeeplinks
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 
+@OptIn(ExperimentalPermissionsApi::class)
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,7 +66,14 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SupaBaseTestTheme {
-
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ),
+                    23
+                )
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -69,19 +87,55 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+// Методы и переменные для получения геолокации (некоторые перемнные объявляются в UI)
+// (не забывай про разрешение к геолокации в телефоне)
+private var locationManager: LocationManager? = null
+lateinit var geocoder :Geocoder
+private val locationListener: LocationListener = object : LocationListener {
 
+    override fun onLocationChanged(location: Location) {
+        Log.d("Location", "${location.longitude} ${location.latitude}")
+        val address = geocoder.getFromLocation(location.latitude,location.longitude,1)
+        Log.d("Address", address?.get(0)?.getAddressLine(0).toString())
+        Log.d("Address", address!![0].locality)
+    }
+
+    override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+    override fun onProviderEnabled(provider: String) {}
+    override fun onProviderDisabled(provider: String) {}
+}
+fun location(context: Context) {
+    locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager?
+
+
+    try {
+        // Request location updates
+        locationManager?.requestLocationUpdates(
+            LocationManager.NETWORK_PROVIDER,
+            0L,
+            0f,
+            locationListener
+        )
+    } catch (ex: SecurityException) {
+        Log.d("myTag", "Security Exception, no location available")
+    }
+}
+
+//Методы и переменные для получения наклона
 lateinit var sManager: SensorManager
 lateinit var sListener: SensorEventListener
 lateinit var sensor: Sensor
 lateinit var sensor2: Sensor
+
 fun stop(context: Context) {
     sManager.unregisterListener(sListener)
 
     TimeUnit.SECONDS.sleep(1)
     start(context)
 }
-fun start(context: Context)
-{
+fun start(context: Context) {
+
+
     val magnetic = FloatArray(9)
     val gravity = FloatArray(9)
 
@@ -131,13 +185,20 @@ fun start(context: Context)
     sManager.registerListener(sListener, sensor, SensorManager.SENSOR_DELAY_UI)
     sManager.registerListener(sListener, sensor2, SensorManager.SENSOR_DELAY_UI)
 }
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Preview
 @Composable
 fun UI() {
+
+    geocoder = Geocoder(LocalContext.current, Locale.getDefault())
+
     var context = LocalContext.current
-
-    start(context)
-
+    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.LOCATION_HARDWARE)
+    val cameraPermissionState1 = rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    val cameraPermissionState2 = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+    //start(context)
+    location(context)
 
     val SignUpViewModel = SignUpViewModel()
     Constants.supabase.handleDeeplinks(Intent(LocalContext.current, MainActivity::class.java))
@@ -165,6 +226,7 @@ fun UI() {
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         CustomEmail(search = email,
             "Enter Email / Phone Number",
             onValueChange = { newText -> email = newText })
@@ -173,6 +235,7 @@ fun UI() {
             onValueChange = { newText -> password = newText })
         Button(
             onClick = {
+
                 SignUpViewModel.onSignInEmailPassword(email, password)
             },
             modifier = Modifier.fillMaxWidth(0.8f)
