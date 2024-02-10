@@ -1,5 +1,6 @@
 package com.example.supabasetest
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -36,8 +37,9 @@ import com.example.supabasetest.viewmodel.SignUpViewModel
 import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import io.github.jan.supabase.compose.auth.composeAuth
+import io.github.jan.supabase.gotrue.handleDeeplinks
 
-val SignUpViewModel = SignUpViewModel()
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             SupaBaseTestTheme {
+
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -61,7 +64,11 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun UI() {
+    val SignUpViewModel = SignUpViewModel()
+    Constants.supabase.handleDeeplinks(Intent(LocalContext.current,MainActivity::class.java))
     var email: String by rememberSaveable { mutableStateOf("") }
+    var password: String by rememberSaveable { mutableStateOf("") }
+    var newPassword: String by rememberSaveable { mutableStateOf("") }
     var code: String by rememberSaveable { mutableStateOf("") }
     var errorMessage: String = ""
     val context = LocalContext.current
@@ -71,7 +78,8 @@ fun UI() {
                 NativeSignInResult.ClosedByUser -> errorMessage = "Closed by user"
                 is NativeSignInResult.Error -> errorMessage = it.message
                 is NativeSignInResult.NetworkError -> errorMessage = it.message
-                NativeSignInResult.Success -> Toast.makeText(context,"123",Toast.LENGTH_SHORT).show()
+                NativeSignInResult.Success -> Toast.makeText(context, "123", Toast.LENGTH_SHORT)
+                    .show()
             }
         },
         fallback = {
@@ -86,13 +94,37 @@ fun UI() {
         CustomEmail(search = email,
             "Enter Email / Phone Number",
             onValueChange = { newText -> email = newText })
+        CustomEmail(search = password,
+            "Password",
+            onValueChange = { newText -> password = newText })
         Button(
-            onClick = { SignUpViewModel.onSignInEmailCode(email) },
+            onClick = {
+                SignUpViewModel.onSignInEmailPassword(email, password)
+            },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
-            Text(text = "Send Code (SigIn)")
+            Text(text = "SigIn with Email")
+        }
+        CustomEmail(search = code,
+            "Code",
+            onValueChange = { newText -> code = newText })
+        Button(
+            onClick = {
+                SignUpViewModel.onSignInEmailCode(email)
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(text = "Send code")
         }
         Button(
+            onClick = {
+                SignUpViewModel.verifyEmailCode(email, code)
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(text = "Verifity OTP")
+        }
+        /*Button(
             onClick = { SignUpViewModel.onSignUpGoogle() },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
@@ -102,7 +134,8 @@ fun UI() {
             onClick = {
                 //SignUpViewModel.onSignInGoogle()
                 authState.startFlow()
-                if(errorMessage=="Success!") Toast.makeText(context,"123",Toast.LENGTH_SHORT).show()
+                if (errorMessage == "Success!") Toast.makeText(context, "123", Toast.LENGTH_SHORT)
+                    .show()
             },
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
@@ -115,6 +148,25 @@ fun UI() {
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(text = "Verify Email Code")
+        }*/
+        CustomEmail(search = newPassword,
+            "NewPassword",
+            onValueChange = { newText -> newPassword = newText })
+        Button(
+            onClick = {
+                SignUpViewModel.resetPassword(email)
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(text = "Reset Password")
+        }
+        Button(
+            onClick = {
+                SignUpViewModel.updateUser(email,newPassword)
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(text = "Update Password")
         }
     }
 }
