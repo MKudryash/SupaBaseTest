@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -87,15 +88,16 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+
 // Методы и переменные для получения геолокации (некоторые перемнные объявляются в UI)
 // (не забывай про разрешение к геолокации в телефоне)
 private var locationManager: LocationManager? = null
-lateinit var geocoder :Geocoder
+lateinit var geocoder: Geocoder
 private val locationListener: LocationListener = object : LocationListener {
 
     override fun onLocationChanged(location: Location) {
         Log.d("Location", "${location.longitude} ${location.latitude}")
-        val address = geocoder.getFromLocation(location.latitude,location.longitude,1)
+        val address = geocoder.getFromLocation(location.latitude, location.longitude, 1)
         Log.d("Address", address?.get(0)?.getAddressLine(0).toString())
         Log.d("Address", address!![0].locality)
     }
@@ -104,9 +106,9 @@ private val locationListener: LocationListener = object : LocationListener {
     override fun onProviderEnabled(provider: String) {}
     override fun onProviderDisabled(provider: String) {}
 }
+
 fun location(context: Context) {
     locationManager = context.getSystemService(LOCATION_SERVICE) as LocationManager?
-
 
     try {
         // Request location updates
@@ -133,9 +135,8 @@ fun stop(context: Context) {
     TimeUnit.SECONDS.sleep(1)
     start(context)
 }
+
 fun start(context: Context) {
-
-
     val magnetic = FloatArray(9)
     val gravity = FloatArray(9)
 
@@ -190,17 +191,27 @@ fun start(context: Context) {
 @Preview
 @Composable
 fun UI() {
+    val SignUpViewModel = SignUpViewModel()
+
+    LaunchedEffect(Unit) {
+        SignUpViewModel.realTimeDb(this)
+    }
+    val userState by SignUpViewModel.userState
+    SignUpViewModel.getNote()
+    Text(text = userState.toString())
 
     geocoder = Geocoder(LocalContext.current, Locale.getDefault())
 
     var context = LocalContext.current
-    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.LOCATION_HARDWARE)
-    val cameraPermissionState1 = rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION)
-    val cameraPermissionState2 = rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+    val cameraPermissionState =
+        rememberPermissionState(android.Manifest.permission.LOCATION_HARDWARE)
+    val cameraPermissionState1 =
+        rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    val cameraPermissionState2 =
+        rememberPermissionState(android.Manifest.permission.ACCESS_COARSE_LOCATION)
     //start(context)
     location(context)
 
-    val SignUpViewModel = SignUpViewModel()
     Constants.supabase.handleDeeplinks(Intent(LocalContext.current, MainActivity::class.java))
     var email: String by rememberSaveable { mutableStateOf("") }
     var password: String by rememberSaveable { mutableStateOf("") }
@@ -304,6 +315,14 @@ fun UI() {
             modifier = Modifier.fillMaxWidth(0.8f)
         ) {
             Text(text = "Update Password")
+        }
+        Button(
+            onClick = {
+                SignUpViewModel.sendMessage()
+            },
+            modifier = Modifier.fillMaxWidth(0.8f)
+        ) {
+            Text(text = "SignInGoogle")
         }
     }
 }
